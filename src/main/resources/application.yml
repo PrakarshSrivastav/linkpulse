@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: linkpulse
+  datasource:
+    url: jdbc:postgresql://localhost:5433/linkpulse
+    username: linkpulse
+    password: linkpulse
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+management:
+  endpoint:
+    health:
+      show-details: always

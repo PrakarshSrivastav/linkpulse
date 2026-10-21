@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: linkpulse-postgres
+    environment:
+      POSTGRES_DB: linkpulse
+      POSTGRES_USER: linkpulse
+      POSTGRES_PASSWORD: linkpulse
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
