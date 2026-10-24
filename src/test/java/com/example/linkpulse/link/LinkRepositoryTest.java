@@ -1,7 +1,6 @@
-package com.example.linkpulse;
+package com.example.linkpulse.link;
 
-import com.example.linkpulse.link.Link;
-import com.example.linkpulse.link.LinkRepository;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -10,10 +9,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.Instant;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
-@DataJpaTest
+@DataJpaTest(showSql=false)
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class LinkRepositoryTest {
 
@@ -26,21 +22,21 @@ class LinkRepositoryTest {
 
         var found = repository.findByCode("abc1234");
 
-        assertThat(found).isPresent();
-        assertThat(found.get().getLongUrl()).isEqualTo("https://example.com");
-        assertThat(found.get().getId()).isNotNull();
+        Assertions.assertThat(found).isPresent();
+        Assertions.assertThat(found.get().getLongUrl()).isEqualTo("https://example.com");
+        Assertions.assertThat(found.get().getId()).isNotNull();
     }
 
     @Test
     void unknownCodeReturnsEmpty() {
-        assertThat(repository.findByCode("nope123")).isEmpty();
+        Assertions.assertThat(repository.findByCode("nope123")).isEmpty();
     }
 
     @Test
     void duplicateCodeIsRejectedByDatabase() {
         repository.saveAndFlush(new Link("dup1234", "https://a.com", null));
 
-        assertThatThrownBy(() ->
+        Assertions.assertThatThrownBy(() ->
                 repository.saveAndFlush(new Link("dup1234", "https://b.com", null)))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
@@ -50,8 +46,8 @@ class LinkRepositoryTest {
         var expiry = Instant.parse("2030-01-01T00:00:00Z");
         var link = new Link("exp1234", "https://x.com", expiry);
 
-        assertThat(link.isExpiredAt(expiry.minusSeconds(1))).isFalse();
-        assertThat(link.isExpiredAt(expiry)).isTrue();
-        assertThat(new Link("nev1234", "https://x.com", null).isExpiredAt(expiry)).isFalse();
+        Assertions.assertThat(link.isExpiredAt(expiry.minusSeconds(1))).isFalse();
+        Assertions.assertThat(link.isExpiredAt(expiry)).isTrue();
+        Assertions.assertThat(new Link("nev1234", "https://x.com", null).isExpiredAt(expiry)).isFalse();
     }
 }
