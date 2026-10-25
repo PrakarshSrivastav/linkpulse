@@ -1,4 +1,5 @@
 package com.example.linkpulse.link;
 
-public class CodeGenerator {
+public interface CodeGenerator {
+    String generate();
 }
