@@ -12,7 +12,7 @@ import java.time.Instant;
 public class LinkService {
     static final int MAX_ATTEMPTS=3;
     private static final String CODE_CONSTRAINT="uk_links_code";
-    private static final Logger log = (Logger) LoggerFactory.getLogger(LinkService.class);
+    private static final Logger log = LoggerFactory.getLogger(LinkService.class);
     private final LinkRepository repository;
     private final CodeGenerator codeGenerator;
 
@@ -25,6 +25,14 @@ public class LinkService {
             return createWithAlias(longUrl, alias, expireAt);
         }
         return createWithRandomCode(longUrl, expireAt);
+    }
+    public Link resolve(String code) {
+        Link link = repository.findByCode(code)
+                .orElseThrow(() -> new LinkNotFoundException(code));
+        if (link.isExpiredAt(Instant.now())) {
+            throw new LinkExpiredException(code);
+        }
+        return link;
     }
 
     private Link createWithAlias(String longUrl, String alias, Instant expireAt) {
