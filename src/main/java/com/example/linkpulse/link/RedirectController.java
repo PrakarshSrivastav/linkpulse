@@ -19,9 +19,9 @@ public class RedirectController {
 
     @GetMapping("/{code}")
     public ResponseEntity<Void> redirect(@PathVariable String code) {
-        Link link = service.resolve(code);
+        String longUrl = service.resolveLongUrl(code);
         return ResponseEntity.status(HttpStatus.FOUND)
-                .location(URI.create(link.getLongUrl()))
+                .location(URI.create(longUrl))
                 .build();
     }
 }

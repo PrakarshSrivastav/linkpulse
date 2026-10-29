@@ -1,49 +1,75 @@
 package com.example.linkpulse.link;
 
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.Optional;
 
 @Service
 public class LinkService {
-    static final int MAX_ATTEMPTS=3;
-    private static final String CODE_CONSTRAINT="uk_links_code";
+
+    static final int MAX_ATTEMPTS = 3;
+    private static final String CODE_CONSTRAINT = "uk_links_code";
     private static final Logger log = LoggerFactory.getLogger(LinkService.class);
+
     private final LinkRepository repository;
     private final CodeGenerator codeGenerator;
+    private final LinkCache cache;
 
-    public LinkService(LinkRepository repository, CodeGenerator codeGenerator) {
+    public LinkService(LinkRepository repository, CodeGenerator codeGenerator, LinkCache cache) {
         this.repository = repository;
-        this.codeGenerator=codeGenerator;
+        this.codeGenerator = codeGenerator;
+        this.cache = cache;
     }
-    public Link create(String longUrl, String alias, Instant expireAt){
-        if( alias != null){
-            return createWithAlias(longUrl, alias, expireAt);
-        }
-        return createWithRandomCode(longUrl, expireAt);
-    }
-    public Link resolve(String code) {
-        Link link = repository.findByCode(code)
-                .orElseThrow(() -> new LinkNotFoundException(code));
-        if (link.isExpiredAt(Instant.now())) {
-            throw new LinkExpiredException(code);
-        }
+
+    // Deliberately NOT @Transactional: each insert attempt must get its own
+    // transaction, because Postgres aborts a transaction after a unique violation.
+    public Link create(String longUrl, String alias, Instant expiresAt) {
+        Link link = (alias != null)
+                ? createWithAlias(longUrl, alias, expiresAt)
+                : createWithRandomCode(longUrl, expiresAt);
+        // A "not found" may be cached for this code (someone visited it before it existed).
+        cache.evict(link.getCode());
         return link;
     }
 
-    private Link createWithAlias(String longUrl, String alias, Instant expireAt) {
-        try{
-            return repository.saveAndFlush(new Link(alias, longUrl,expireAt));
-        }catch(DataIntegrityViolationException e){
-            if(isCodeCollision(e)){
+    public String resolveLongUrl(String code) {
+        Optional<String> cached = cache.get(code);
+        if (cached.isPresent()) {
+            if (LinkCache.NOT_FOUND.equals(cached.get())) {
+                throw new LinkNotFoundException(code);
+            }
+            return cached.get();
+        }
+
+        Instant now = Instant.now();
+        Optional<Link> found = repository.findByCode(code);
+        if (found.isEmpty()) {
+            cache.putNotFound(code);
+            throw new LinkNotFoundException(code);
+        }
+        Link link = found.get();
+        if (link.isExpiredAt(now)) {
+            throw new LinkExpiredException(code);
+        }
+        cache.putLink(link, now);
+        return link.getLongUrl();
+    }
+
+    private Link createWithAlias(String longUrl, String alias, Instant expiresAt) {
+        try {
+            return repository.saveAndFlush(new Link(alias, longUrl, expiresAt));
+        } catch (DataIntegrityViolationException e) {
+            if (isCodeCollision(e)) {
                 throw new AliasTakenException(alias);
-            }throw e;
+            }
+            throw e;
         }
     }
+
     private Link createWithRandomCode(String longUrl, Instant expiresAt) {
         for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
             String code = codeGenerator.generate();

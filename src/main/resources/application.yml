@@ -1,8 +1,13 @@
 linkpulse:
   base-url: http://localhost:8080
+  cache:
+    ttl: 1h
+    not-found-ttl: 60s
+
 logging:
   level:
     org.hibernate.SQL: debug
+
 spring:
   application:
     name: linkpulse
@@ -14,8 +19,17 @@ spring:
     hibernate:
       ddl-auto: validate
     open-in-view: false
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 200ms
 
 management:
   endpoint:
     health:
       show-details: always
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics

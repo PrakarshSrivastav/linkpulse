@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.data.redis.core.StringRedisTemplate;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -27,11 +28,14 @@ class ConcurrentAliasTest {
     @Autowired
     LinkRepository repository;
 
+    @Autowired
+    StringRedisTemplate redis;
+
     @BeforeEach
     void cleanDatabase() {
-        repository.deleteAll();
+        repository.deleteAllInBatch();
+        redis.delete(redis.keys(LinkCache.KEY_PREFIX + "*"));
     }
-
     @Test
     void tenParallelRequestsForSameAliasGiveOne201AndNine409s() throws Exception {
         HttpClient client = HttpClient.newHttpClient();

@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.core.StringRedisTemplate;
 
 import java.util.Iterator;
 import java.util.List;
@@ -17,16 +18,21 @@ class LinkServiceTest {
     @Autowired
     LinkRepository repository;
 
+    @Autowired
+    LinkCache linkCache;
+
+    @Autowired
+    StringRedisTemplate redis;
+
     @BeforeEach
     void cleanDatabase() {
-        repository.deleteAll();
+        repository.deleteAllInBatch();
+        redis.delete(redis.keys(LinkCache.KEY_PREFIX + "*"));
     }
-
     @Test
     void retriesWithNewCodeOnCollision() {
         repository.saveAndFlush(new Link("collide", "https://existing.com", null));
-        var service = new LinkService(repository, new FakeCodeGenerator("collide", "collide", "fresh01"));
-
+        var service = new LinkService(repository, new FakeCodeGenerator("collide", "collide", "fresh01"), linkCache);
         Link created = service.create("https://new.com", null, null);
 
         assertThat(created.getCode()).isEqualTo("fresh01");
@@ -36,8 +42,7 @@ class LinkServiceTest {
     @Test
     void givesUpAfterMaxAttempts() {
         repository.saveAndFlush(new Link("collide", "https://existing.com", null));
-        var service = new LinkService(repository, new FakeCodeGenerator("collide", "collide", "collide"));
-
+        var service = new LinkService(repository, new FakeCodeGenerator("collide", "collide", "collide"), linkCache);
         assertThatThrownBy(() -> service.create("https://new.com", null, null))
                 .isInstanceOf(CodeGenerationException.class);
         assertThat(repository.count()).isEqualTo(1);
@@ -46,8 +51,7 @@ class LinkServiceTest {
     @Test
     void takenAliasIsRejected() {
         repository.saveAndFlush(new Link("my-alias", "https://existing.com", null));
-        var service = new LinkService(repository, new FakeCodeGenerator());
-
+        var service = new LinkService(repository, new FakeCodeGenerator(), linkCache);
         assertThatThrownBy(() -> service.create("https://new.com", "my-alias", null))
                 .isInstanceOf(AliasTakenException.class);
     }

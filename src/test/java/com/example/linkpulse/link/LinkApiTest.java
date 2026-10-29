@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
@@ -28,9 +29,13 @@ class LinkApiTest {
     @Autowired
     LinkRepository repository;
 
+    @Autowired
+    StringRedisTemplate redis;
+
     @BeforeEach
     void cleanDatabase() {
-        repository.deleteAll();
+        repository.deleteAllInBatch();
+        redis.delete(redis.keys(LinkCache.KEY_PREFIX + "*"));
     }
 
     @Test
