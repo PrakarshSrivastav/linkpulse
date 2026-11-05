@@ -24,14 +24,22 @@ public class Link {
     @Column(name="expires_at")
     private Instant expiresAt;
 
+    @Column(name = "owner_id", updatable = false)
+    private Long ownerId;
+
     protected Link(){
 
     }
 
     public Link(String code, String longUrl, Instant expiresAt){
+        this(code, longUrl, expiresAt, null);
+    }
+
+    public Link(String code, String longUrl, Instant expiresAt, Long ownerId){
         this.code=code;
         this.longUrl=longUrl;
         this.expiresAt=expiresAt;
+        this.ownerId=ownerId;
         this.createdAt=Instant.now();
     }
     public boolean isExpiredAt(Instant now){
@@ -56,5 +64,9 @@ public class Link {
 
     public Instant getExpiresAt() {
         return expiresAt;
+    }
+
+    public Long getOwnerId() {
+        return ownerId;
     }
 }

@@ -1,6 +1,7 @@
 package com.example.linkpulse.auth;
 
 import com.example.linkpulse.user.UserRepository;
+import com.example.linkpulse.link.LinkRepository;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,8 +26,12 @@ class AuthApiTest {
     @Autowired
     UserRepository users;
 
+    @Autowired
+    LinkRepository links;
+
     @BeforeEach
     void clean() {
+        links.deleteAllInBatch();
         users.deleteAllInBatch();
     }
 

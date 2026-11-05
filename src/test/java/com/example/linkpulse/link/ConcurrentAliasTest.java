@@ -1,5 +1,8 @@
 package com.example.linkpulse.link;
 
+import com.example.linkpulse.auth.TokenService;
+import com.example.linkpulse.user.User;
+import com.example.linkpulse.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,18 +32,32 @@ class ConcurrentAliasTest {
     LinkRepository repository;
 
     @Autowired
+    UserRepository users;
+
+    @Autowired
+    TokenService tokens;
+
+    @Autowired
     StringRedisTemplate redis;
+
+    String token;
 
     @BeforeEach
     void cleanDatabase() {
         repository.deleteAllInBatch();
+        users.deleteAllInBatch();
         redis.delete(redis.keys(LinkCache.KEY_PREFIX + "*"));
+        User owner = users.saveAndFlush(new User("racer@example.com", "not-a-real-hash"));
+        // jwt() only works inside MockMvc; over real HTTP the request goes through the real JwtDecoder.
+        token = tokens.issue(owner);
     }
+
     @Test
     void tenParallelRequestsForSameAliasGiveOne201AndNine409s() throws Exception {
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/api/links"))
                 .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + token)
                 .POST(HttpRequest.BodyPublishers.ofString("""
                         {"url": "https://example.com", "alias": "race-alias"}
                         """))

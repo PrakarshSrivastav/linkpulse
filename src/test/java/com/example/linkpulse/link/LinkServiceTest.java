@@ -33,8 +33,7 @@ class LinkServiceTest {
     void retriesWithNewCodeOnCollision() {
         repository.saveAndFlush(new Link("collide", "https://existing.com", null));
         var service = new LinkService(repository, new FakeCodeGenerator("collide", "collide", "fresh01"), linkCache);
-        Link created = service.create("https://new.com", null, null);
-
+        Link created = service.create(null, "https://new.com", null, null);
         assertThat(created.getCode()).isEqualTo("fresh01");
         assertThat(repository.count()).isEqualTo(2);
     }
@@ -43,7 +42,7 @@ class LinkServiceTest {
     void givesUpAfterMaxAttempts() {
         repository.saveAndFlush(new Link("collide", "https://existing.com", null));
         var service = new LinkService(repository, new FakeCodeGenerator("collide", "collide", "collide"), linkCache);
-        assertThatThrownBy(() -> service.create("https://new.com", null, null))
+        assertThatThrownBy(() -> service.create(null, "https://new.com", null, null))
                 .isInstanceOf(CodeGenerationException.class);
         assertThat(repository.count()).isEqualTo(1);
     }
@@ -52,7 +51,7 @@ class LinkServiceTest {
     void takenAliasIsRejected() {
         repository.saveAndFlush(new Link("my-alias", "https://existing.com", null));
         var service = new LinkService(repository, new FakeCodeGenerator(), linkCache);
-        assertThatThrownBy(() -> service.create("https://new.com", "my-alias", null))
+        assertThatThrownBy(() -> service.create(null, "https://new.com", "my-alias", null))
                 .isInstanceOf(AliasTakenException.class);
     }
 

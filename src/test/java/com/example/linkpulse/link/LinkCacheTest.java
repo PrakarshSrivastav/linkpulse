@@ -1,5 +1,8 @@
 package com.example.linkpulse.link;
 
+import com.example.linkpulse.user.User;
+import com.example.linkpulse.user.UserRepository;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +14,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -31,10 +35,21 @@ class LinkCacheTest {
     @Autowired
     StringRedisTemplate redis;
 
+    @Autowired
+    UserRepository users;
+
+    User owner;
+
     @BeforeEach
     void clean() {
         repository.deleteAllInBatch();
+        users.deleteAllInBatch();
         redis.delete(redis.keys(LinkCache.KEY_PREFIX + "*"));
+        owner = users.saveAndFlush(new User("owner@example.com", "not-a-real-hash"));
+    }
+
+    private RequestPostProcessor asOwner() {
+        return jwt().jwt(token -> token.subject(owner.getId().toString()));
     }
 
     @Test
@@ -55,7 +70,7 @@ class LinkCacheTest {
         mvc.perform(get("/promo-x")).andExpect(status().isNotFound());
         assertThat(redis.opsForValue().get("link:promo-x")).isEqualTo(LinkCache.NOT_FOUND);
 
-        mvc.perform(post("/api/links").contentType(APPLICATION_JSON)
+        mvc.perform(post("/api/links").with(asOwner()).contentType(APPLICATION_JSON)
                         .content("""
                                 {"url": "https://example.com/promo", "alias": "promo-x"}
                                 """))

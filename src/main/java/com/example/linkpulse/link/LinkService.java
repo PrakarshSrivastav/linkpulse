@@ -6,6 +6,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -27,10 +28,10 @@ public class LinkService {
 
     // Deliberately NOT @Transactional: each insert attempt must get its own
     // transaction, because Postgres aborts a transaction after a unique violation.
-    public Link create(String longUrl, String alias, Instant expiresAt) {
+    public Link create(Long ownerId, String longUrl, String alias, Instant expiresAt) {
         Link link = (alias != null)
-                ? createWithAlias(longUrl, alias, expiresAt)
-                : createWithRandomCode(longUrl, expiresAt);
+                ? createWithAlias(ownerId, longUrl, alias, expiresAt)
+                : createWithRandomCode(ownerId, longUrl, expiresAt);
         // A "not found" may be cached for this code (someone visited it before it existed).
         cache.evict(link.getCode());
         return link;
@@ -59,9 +60,23 @@ public class LinkService {
         return link.getLongUrl();
     }
 
-    private Link createWithAlias(String longUrl, String alias, Instant expiresAt) {
+    public List<Link> listOwned(Long ownerId) {
+        return repository.findTop100ByOwnerIdOrderByCreatedAtDesc(ownerId);
+    }
+
+    // Deliberately NOT @Transactional: the delete must be committed before we evict,
+    // otherwise a concurrent redirect could re-cache the old URL from the uncommitted row.
+    public void delete(Long ownerId, String code) {
+        int deleted = repository.deleteOwned(code, ownerId);
+        if (deleted == 0) {
+            throw new LinkNotFoundException(code);
+        }
+        cache.evict(code);
+    }
+
+    private Link createWithAlias(Long ownerId, String longUrl, String alias, Instant expiresAt) {
         try {
-            return repository.saveAndFlush(new Link(alias, longUrl, expiresAt));
+            return repository.saveAndFlush(new Link(alias, longUrl, expiresAt, ownerId));
         } catch (DataIntegrityViolationException e) {
             if (isCodeCollision(e)) {
                 throw new AliasTakenException(alias);
@@ -70,11 +85,11 @@ public class LinkService {
         }
     }
 
-    private Link createWithRandomCode(String longUrl, Instant expiresAt) {
+    private Link createWithRandomCode(Long ownerId, String longUrl, Instant expiresAt) {
         for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
             String code = codeGenerator.generate();
             try {
-                return repository.saveAndFlush(new Link(code, longUrl, expiresAt));
+                return repository.saveAndFlush(new Link(code, longUrl, expiresAt, ownerId));
             } catch (DataIntegrityViolationException e) {
                 if (!isCodeCollision(e)) {
                     throw e;

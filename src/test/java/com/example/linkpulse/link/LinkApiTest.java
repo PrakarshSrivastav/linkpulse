@@ -1,5 +1,7 @@
 package com.example.linkpulse.link;
 
+import com.example.linkpulse.user.User;
+import com.example.linkpulse.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,12 +9,14 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.time.Instant;
 
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -30,17 +34,29 @@ class LinkApiTest {
     LinkRepository repository;
 
     @Autowired
+    UserRepository users;
+
+    @Autowired
     StringRedisTemplate redis;
+
+    User owner;
 
     @BeforeEach
     void cleanDatabase() {
         repository.deleteAllInBatch();
+        users.deleteAllInBatch();
         redis.delete(redis.keys(LinkCache.KEY_PREFIX + "*"));
+        owner = users.saveAndFlush(new User("owner@example.com", "not-a-real-hash"));
+    }
+
+    // A fake, already-validated JWT whose subject is our owner's id. No real token needed.
+    private RequestPostProcessor asOwner() {
+        return jwt().jwt(token -> token.subject(owner.getId().toString()));
     }
 
     @Test
     void createsLinkWithRandomCode() throws Exception {
-        mvc.perform(post("/api/links").contentType(APPLICATION_JSON)
+        mvc.perform(post("/api/links").with(asOwner()).contentType(APPLICATION_JSON)
                         .content("""
                                 {"url": "https://example.com"}
                                 """))
@@ -51,7 +67,7 @@ class LinkApiTest {
 
     @Test
     void rejectsNonHttpUrl() throws Exception {
-        mvc.perform(post("/api/links").contentType(APPLICATION_JSON)
+        mvc.perform(post("/api/links").with(asOwner()).contentType(APPLICATION_JSON)
                         .content("""
                                 {"url": "javascript:alert(1)"}
                                 """))
@@ -61,7 +77,7 @@ class LinkApiTest {
 
     @Test
     void rejectsInvalidAlias() throws Exception {
-        mvc.perform(post("/api/links").contentType(APPLICATION_JSON)
+        mvc.perform(post("/api/links").with(asOwner()).contentType(APPLICATION_JSON)
                         .content("""
                                 {"url": "https://example.com", "alias": "a b"}
                                 """))
@@ -74,9 +90,9 @@ class LinkApiTest {
         String body = """
                 {"url": "https://example.com", "alias": "my-alias"}
                 """;
-        mvc.perform(post("/api/links").contentType(APPLICATION_JSON).content(body))
+        mvc.perform(post("/api/links").with(asOwner()).contentType(APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated());
-        mvc.perform(post("/api/links").contentType(APPLICATION_JSON).content(body))
+        mvc.perform(post("/api/links").with(asOwner()).contentType(APPLICATION_JSON).content(body))
                 .andExpect(status().isConflict());
     }
 
