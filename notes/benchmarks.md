@@ -65,3 +65,19 @@ Written before running.
 - Reasoning: Moving from Redis-only (pure in-memory) to sync DB insert on hot path. 
 - Every redirect now pays JDBC insert cost (network + fsync) and contends for Hikari pool. With 100 VUs vs pool of 10-20, throughput becomes pool_size / insert_time limited.
 - Expect 70% drop in req/s, 7-10x jump in p99, and pending >0 due to connection queue.
+
+## Mission 4 result: sync click insert (100 VUs, 30 s)
+| Run | VUs | p50 | p95 | p99 | req/s | checks |
+|---|---|---|---|---|---|---|
+| Redis + sync click INSERT | 100 | 17.92 ms | 22.61 ms | 34.76 ms | 5,479 | 100% |
+
+- hikaricp.connections.pending: 83 / 87 / 82.
+- Clicks recorded: 241,230 = 76,736 (warm-up) + 164,494 (run). No click lost.
+- Throughput −81% vs Redis-only (28,470), and even below Postgres-only without cache (9,528):
+  an INSERT + commit (WAL flush) holds a connection far longer than an indexed SELECT.
+- 10 connections / 5,479 req/s ≈ 1.8 ms per click per connection, vs 0.05 ms for the SELECT.
+- Little's Law: 5,479 × 18.19 ms ≈ 99.7 in flight (= 100 VUs).
+- Prediction vs reality: req/s 8,000 → 5,479 (worse than expected); p99 45 → 34.76 ms (better);
+  pending 30 → 82–87 (I underestimated the queue: with the pool as bottleneck, nearly all
+  requests wait for a connection).
+- Conclusion: one synchronous write per redirect undoes the cache. The write must leave the hot path.
