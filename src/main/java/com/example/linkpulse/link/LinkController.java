@@ -15,16 +15,21 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
 import java.util.List;
+import com.example.linkpulse.click.ClickStats;
+import com.example.linkpulse.click.ClickStatsRepository;
 
 @RestController
 @RequestMapping("/api/links")
 public class LinkController {
 
     private final LinkService service;
+    private final ClickStatsRepository clickStats;
     private final String baseUrl;
 
-    public LinkController(LinkService service, @Value("${linkpulse.base-url}") String baseUrl) {
+    public LinkController(LinkService service, ClickStatsRepository clickStats,
+                          @Value("${linkpulse.base-url}") String baseUrl) {
         this.service = service;
+        this.clickStats = clickStats;
         this.baseUrl = baseUrl;
     }
 
@@ -52,6 +57,11 @@ public class LinkController {
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping("/{code}/stats")
+    public ClickStats stats(@AuthenticationPrincipal Jwt jwt, @PathVariable String code) {
+        Link link = service.getOwned(userId(jwt), code);
+        return clickStats.statsFor(link.getCode(), link.getCreatedAt());
+    }
     private String shortUrl(Link link) {
         return baseUrl + "/" + link.getCode();
     }

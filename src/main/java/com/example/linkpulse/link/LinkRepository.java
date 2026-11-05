@@ -19,4 +19,6 @@ public interface LinkRepository extends JpaRepository<Link, Long> {
     @Modifying
     @Query("delete from Link l where l.code = :code and l.ownerId = :ownerId")
     int deleteOwned(@Param("code") String code, @Param("ownerId") Long ownerId);
+
+    Optional<Link> findByCodeAndOwnerId(String code, Long ownerId);
 }

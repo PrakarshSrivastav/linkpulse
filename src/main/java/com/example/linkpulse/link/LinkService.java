@@ -63,6 +63,10 @@ public class LinkService {
     public List<Link> listOwned(Long ownerId) {
         return repository.findTop100ByOwnerIdOrderByCreatedAtDesc(ownerId);
     }
+    public Link getOwned(Long ownerId, String code) {
+        return repository.findByCodeAndOwnerId(code, ownerId)
+                .orElseThrow(() -> new LinkNotFoundException(code));
+    }
 
     // Deliberately NOT @Transactional: the delete must be committed before we evict,
     // otherwise a concurrent redirect could re-cache the old URL from the uncommitted row.
