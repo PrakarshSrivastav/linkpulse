@@ -1,4 +1,5 @@
 package com.example.linkpulse.click;
 
-public class Click {
-}
+import java.time.Instant;
+
+record Click(String code, Instant clickedAt, String referrer) {}

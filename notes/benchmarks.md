@@ -92,3 +92,23 @@ Written before running.
 - No blocking on Hikari in request threads, so pending goes back to 0. p99 stays close to Redis-only + minor queue contention. Single background thread does batch insert every 1s using 1 connection, so no pool contention. 
 - Clicks lost is 0 if queue is unbounded/large enough, but all in-memory clicks from last flush interval are lost on crash - not durable.
 
+## Mission 4 result: async clicks (queue + batch insert every 1 s, 100 VUs, 30 s)
+| Run | VUs | p50 | p95 | p99 | req/s | checks |
+|---|---|---|---|---|---|---|
+| Redis-only (Mission 2) | 100 | 3.26 ms | 4.79 ms | 6.47 ms | 28,470 | 100% |
+| Redis + sync click INSERT | 100 | 17.92 ms | 22.61 ms | 34.76 ms | 5,479 | 100% |
+| Redis + async click queue | 100 | 5.09 ms | 10.73 ms | 15.21 ms | 16,268 | 100% |
+
+- hikaricp.connections.pending: 0 (sync: 82–87). Redirect threads no longer touch the pool.
+- Clicks recorded: 618,107 = 130,030 (warm-up) + 488,077 (run). dropped 0, failed 0.
+- Async vs sync: 3.0x throughput, p99 2.3x lower.
+- Async vs Redis-only: 57% of the throughput. Not yet measured why. Hypotheses: Postgres inserting
+  ~16k rows/s competes for the same CPU as app, Redis and k6 (one machine); a single lock in
+  ArrayBlockingQueue shared by 100 request threads; extra allocation (one Click + Instant per redirect).
+- Little's Law: 16,268 × 5.93 ms ≈ 96.5 in flight.
+- Prediction vs reality: req/s 25,000 → 16,268 (too optimistic: I ignored that the database
+  work did not disappear, it moved to the background on the same machine); p99 8 → 15.21 ms;
+  pending 0 and drops 0 were right.
+- Trade-off: clicks appear in the database up to ~1 s later (eventually consistent), and a crash
+  loses what is still in the queue (graceful shutdown flushes it via @PreDestroy).
+

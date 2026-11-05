@@ -8,6 +8,12 @@ linkpulse:
     secret: ${JWT_SECRET:dev-only-secret-change-me-at-least-32-bytes!!}
     ttl: 1h
 
+  clicks:
+    mode: async            # async | sync (sync = one INSERT per redirect, for comparison)
+    queue-capacity: 100000
+    batch-size: 1000
+    flush-interval-ms: 1000
+
 logging:
   level:
     org.hibernate.SQL: debug
@@ -16,7 +22,7 @@ spring:
   application:
     name: linkpulse
   datasource:
-    url: jdbc:postgresql://localhost:5433/linkpulse
+    url: jdbc:postgresql://localhost:5433/linkpulse?reWriteBatchedInserts=true
     username: linkpulse
     password: linkpulse
   jpa:
