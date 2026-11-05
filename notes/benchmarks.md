@@ -56,3 +56,12 @@ Lesson: next time, write the predicted number into this file and commit it befor
   and each request makes two Redis calls (get + put) → ~2 × 200 ms. 100 VUs / 0.406 s ≈ 246 req/s, which matches.
 - Possible fixes: a circuit breaker that skips Redis after repeated failures, fail-fast client settings
   while disconnected, skipping the put after a failed get, and a lower timeout.
+
+## Mission 4 prediction (sync click insert on every redirect, 100 VUs)
+Written before running.
+- req/s: ~8000  (Redis-only was 28,470)
+- p99: ~45 ms (Redis-only was 6.47 ms)
+- Hikari pending: ~30 (Redis-only was 0)
+- Reasoning: Moving from Redis-only (pure in-memory) to sync DB insert on hot path. 
+- Every redirect now pays JDBC insert cost (network + fsync) and contends for Hikari pool. With 100 VUs vs pool of 10-20, throughput becomes pool_size / insert_time limited.
+- Expect 70% drop in req/s, 7-10x jump in p99, and pending >0 due to connection queue.
