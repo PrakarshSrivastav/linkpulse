@@ -81,3 +81,14 @@ Written before running.
   pending 30 → 82–87 (I underestimated the queue: with the pool as bottleneck, nearly all
   requests wait for a connection).
 - Conclusion: one synchronous write per redirect undoes the cache. The write must leave the hot path.
+
+## Mission 4 prediction (async: in-memory queue + batch insert every 1 s, 100 VUs)
+Written before running.
+- req/s: ~25000  (Redis-only 28,470 / sync insert 5,479)
+- p99: ~8 ms (Redis-only 6.47 / sync 34.76)
+- Hikari pending: ~0
+- Clicks lost (dropped): ~0 steady-state, ~25000 at risk on crash/shutdown (last 1s batch)
+- Reasoning: Moves DB work off hot path. Request path is back to Redis GET + queue.offer() (O(1), ~0.1ms), so throughput should recover to ~85-90% of Redis-only.
+- No blocking on Hikari in request threads, so pending goes back to 0. p99 stays close to Redis-only + minor queue contention. Single background thread does batch insert every 1s using 1 connection, so no pool contention. 
+- Clicks lost is 0 if queue is unbounded/large enough, but all in-memory clicks from last flush interval are lost on crash - not durable.
+
