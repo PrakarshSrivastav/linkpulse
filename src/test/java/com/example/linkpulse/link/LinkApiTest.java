@@ -13,6 +13,7 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.time.Instant;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
@@ -83,6 +84,23 @@ class LinkApiTest {
                                 """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors.alias").exists());
+    }
+
+    @Test
+    void rejectsUrlThatPassesTheRegexButIsNotAValidUri() throws Exception {
+        mvc.perform(post("/api/links").with(asOwner()).contentType(APPLICATION_JSON)
+                        .content("""
+                                {"url": "https://example.com/a|b"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.urlParsable").exists());
+    }
+
+    @Test
+    void malformedCodeIs404AndNeverReachesTheCache() throws Exception {
+        mvc.perform(get("/no.such.code")).andExpect(status().isNotFound());
+
+        assertThat(redis.hasKey("link:no.such.code")).isFalse();
     }
 
     @Test

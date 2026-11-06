@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LinkPulse API</title>
+<meta name="description" content="A Spring Boot URL shortener with a Redis cache, JWT auth and click analytics. Interactive API docs included.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600&family=IBM+Plex+Sans:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Hallmark · shape: Index-First · genre: modern-minimal · theme: Cobalt (deal: manual) · job: try · draw: manual
+ * hero: Settled split · nav: wordmark and two links · footer: a mast, the wordmark over the links · imagery: the product (a real request, the endpoint table, measured runs) · signature: the endpoint table, the redirect row on the cobalt wash
+ * axes: light/grotesk-sans/cool · posture: restrained · contrast: pass (checked by hand) · fold: pass · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E4 S5 R5 V3 · weakest: V, no log to rotate against (first run, deal by hand because Hallmark's scripts were not run); kept to three sections so the table and the measured runs carry the page */
+/* Hallmark (https://github.com/nutlope/hallmark) is MIT licensed, Copyright (c) 2026 Hallmark contributors. Theme tokens below are Hallmark's Cobalt theme. */
+
+:root {
+  --color-paper: oklch(98.6% 0.005 250); --color-paper-2: oklch(96.2% 0.008 252); --color-paper-3: oklch(93% 0.011 252);
+  --color-ink: oklch(21% 0.028 262); --color-ink-2: oklch(36% 0.022 260); --color-muted: oklch(50% 0.018 258);
+  --color-rule: oklch(90% 0.009 252); --color-rule-2: oklch(83% 0.012 252);
+  --color-graphite: oklch(21% 0.024 262); --color-graphite-2: oklch(26.5% 0.026 262); --color-graphite-ink: oklch(93% 0.010 250); --color-graphite-muted: oklch(69% 0.022 256);
+  --color-accent: oklch(52% 0.19 258); --color-accent-2: oklch(76% 0.13 254); --color-accent-wash: oklch(95% 0.028 256); --color-accent-ink: oklch(98.6% 0.005 250); --color-focus: oklch(52% 0.19 258);
+  --color-accent-edge: oklch(39% 0.16 260);
+  --color-glyph-1: oklch(89% 0.025 254);
+  --color-key-face: oklch(99.4% 0.003 250); --color-key-edge: oklch(80% 0.016 254);
+  --color-clear: oklch(98.6% 0.005 250 / 0);
+  --color-success: oklch(50% 0.12 150);
+  --font-display: "Familjen Grotesk", system-ui, sans-serif; --font-body: "IBM Plex Sans", system-ui, sans-serif;
+  --font-outlier: "JetBrains Mono", ui-monospace, monospace;
+  --radius-card: 8px; --radius-input: 6px;
+  --cell-w: 8px; --cell-h: 16px; --cut-l: 16px;
+  --rule-hair: 1px; --shadow-card: 0 1px 2px oklch(21% 0.028 262 / 0.06);
+  --shadow-key: 0 3px 0 0 var(--color-key-edge), 0 6px 8px -4px oklch(21% 0.028 262 / 0.28), inset 0 1px 0 oklch(100% 0 0 / 0.9);
+  --shadow-key-accent: 0 3px 0 0 var(--color-accent-edge), 0 6px 8px -4px oklch(30% 0.12 260 / 0.45), inset 0 1px 0 oklch(100% 0 0 / 0.22);
+  --shadow-key-press: inset 0 1px 2px oklch(21% 0.028 262 / 0.14);
+  --tracking-display: -0.028em; --display-weight: 600;
+
+  --space-3xs: 2px; --space-2xs: 4px; --space-xs: 8px; --space-sm: 12px; --space-md: 16px; --space-lg: 24px; --space-xl: 40px; --space-2xl: 64px; --space-3xl: 96px; --space-4xl: 144px;
+  --text-sm: 0.875rem; --text-md: 1rem;
+  --text-display: clamp(2.75rem, 5vw + 1rem, 5.25rem); --text-section: clamp(2rem, 2.5vw + 1rem, 3.5rem);
+  --text-title: clamp(1.25rem, 0.75vw + 0.875rem, 1.625rem); --text-lead: clamp(1.125rem, 0.35vw + 1rem, 1.375rem);
+  --text-figure: clamp(2.5rem, 3vw + 1rem, 4rem);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1); --dur-micro: 120ms;
+  --container: 1440px; --gutter: 64px; --gap-columns: 32px; --section-gap-s: 120px; --section-gap: 144px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { overflow-x: clip; }
+body { margin: 0; background: var(--color-paper); color: var(--color-ink); font-family: var(--font-body); font-size: var(--text-md); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 0.2em; text-decoration-color: var(--color-rule-2); }
+a:hover { text-decoration-color: var(--color-accent); }
+h1, h2 { margin: 0; font-family: var(--font-display); font-weight: var(--display-weight); font-synthesis: none; letter-spacing: var(--tracking-display); line-height: 1.02; overflow-wrap: break-word; min-width: 0; text-wrap: balance; color: var(--color-ink); }
+h1 { max-width: 14ch; font-size: var(--text-display); }
+h2 { max-width: 30ch; font-size: var(--text-section); }
+p { margin: 0; text-wrap: pretty; }
+code, pre { font-family: var(--font-outlier); }
+.container { width: 100%; max-width: var(--container); margin-inline: auto; padding-inline: var(--gutter); }
+.num { font-variant-numeric: tabular-nums; }
+
+/* nav */
+.nav { border-bottom: var(--rule-hair) solid var(--color-rule); }
+.nav .container { display: flex; align-items: center; justify-content: space-between; min-height: 64px; gap: var(--space-lg); }
+.wordmark { font-family: var(--font-display); font-weight: var(--display-weight); font-size: var(--text-title); letter-spacing: var(--tracking-display); text-decoration: none; }
+.nav-links { display: flex; gap: var(--space-lg); font-size: var(--text-sm); }
+
+/* hero: dot grid on the 8 by 16 cell stands in for Cobalt's ASCII field (no script) */
+.hero { padding-block: var(--space-3xl) var(--section-gap-s);
+  background-image: radial-gradient(circle at 1px 1px, var(--color-glyph-1) 1px, var(--color-clear) 1.5px);
+  background-size: var(--cell-w) var(--cell-h); }
+.hero .container { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--space-3xl); align-items: center; }
+.hero-copy { display: grid; gap: var(--space-lg); justify-items: start; }
+.lead { font-size: var(--text-lead); line-height: 1.45; max-width: 40ch; color: var(--color-ink-2); }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-lg); margin-top: var(--space-xs); }
+
+.key { display: inline-flex; align-items: center; min-height: 48px; padding: 0 var(--space-lg); border: var(--rule-hair) solid var(--color-accent-edge); border-radius: var(--radius-input);
+  background: var(--color-accent); color: var(--color-accent-ink); box-shadow: var(--shadow-key-accent);
+  font: 500 var(--text-md)/1 var(--font-display); text-decoration: none;
+  transition: transform var(--dur-micro) var(--ease-out), box-shadow var(--dur-micro) var(--ease-out); }
+.key:hover { transform: translateY(-1px); }
+.key:active { transform: translateY(3px); box-shadow: var(--shadow-key-press); }
+
+/* graphite: the one dark material on the page */
+.graphite { margin: 0; background: var(--color-graphite); color: var(--color-graphite-ink); border-radius: var(--radius-card); box-shadow: var(--shadow-card); overflow: hidden; }
+@supports (corner-shape: bevel) { .graphite { border-radius: var(--cut-l) 4px var(--cut-l) 4px; corner-shape: bevel round bevel round; } }
+.graphite figcaption { padding: var(--space-sm) var(--space-lg); background: var(--color-graphite-2); color: var(--color-graphite-muted); font-size: var(--text-sm); }
+.graphite pre { margin: 0; padding: var(--space-lg); overflow-x: auto; font-size: var(--text-sm); line-height: 1.7; }
+.graphite .c { color: var(--color-graphite-muted); }
+.graphite .t { color: var(--color-accent-2); }
+
+/* sections */
+.section { padding-block: var(--section-gap-s); border-top: var(--rule-hair) solid var(--color-rule); }
+.section-head { display: grid; gap: var(--space-md); margin-bottom: var(--space-2xl); }
+.section-head p { max-width: 60ch; color: var(--color-ink-2); }
+
+/* the table that is the API */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font-family: var(--font-display); font-weight: 500; font-size: var(--text-sm); color: var(--color-muted); padding: var(--space-sm) var(--space-md); border-bottom: var(--rule-hair) solid var(--color-rule-2); }
+td { padding: var(--space-md); border-bottom: var(--rule-hair) solid var(--color-rule); vertical-align: top; }
+td code { font-size: var(--text-sm); }
+tr.hot td { background: var(--color-accent-wash); }
+
+/* measured runs: one figure per row */
+.runs { display: grid; }
+.run { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 4fr) minmax(0, 3fr); gap: var(--gap-columns); align-items: baseline; padding-block: var(--space-xl); border-bottom: var(--rule-hair) solid var(--color-rule); }
+.run:first-child { border-top: var(--rule-hair) solid var(--color-rule); }
+.run h3 { margin: 0; font-family: var(--font-display); font-weight: 500; font-size: var(--text-title); letter-spacing: var(--tracking-display); line-height: 1.2; }
+.run p { color: var(--color-muted); margin-top: var(--space-2xs); max-width: 40ch; }
+.figure { font-family: var(--font-display); font-weight: var(--display-weight); font-size: var(--text-figure); letter-spacing: var(--tracking-display); line-height: 1; font-variant-numeric: tabular-nums; }
+.figure small { font-family: var(--font-body); font-weight: 400; font-size: var(--text-sm); letter-spacing: 0; color: var(--color-muted); margin-left: var(--space-xs); }
+.p99 { font-variant-numeric: tabular-nums; color: var(--color-ink-2); }
+.note { margin-top: var(--space-lg); font-size: var(--text-sm); color: var(--color-muted); max-width: 70ch; }
+
+/* footer */
+.footer { padding-block: var(--space-2xl); background: var(--color-paper-2); border-top: var(--rule-hair) solid var(--color-rule); }
+.footer .container { display: grid; gap: var(--space-lg); }
+.footer-links { display: flex; flex-wrap: wrap; gap: var(--space-lg); font-size: var(--text-sm); }
+.credit { font-size: var(--text-sm); color: var(--color-muted); max-width: 70ch; }
+
+@media (max-width: 60rem) {
+  :root { --gutter: 24px; --section-gap-s: 80px; }
+  .hero .container { grid-template-columns: minmax(0, 1fr); gap: var(--space-2xl); }
+  .run { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .run > div:first-child { grid-column: 1 / -1; }
+}
+@media (max-width: 40rem) { :root { --gutter: 16px; --section-gap-s: 56px; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.01ms !important; } }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="container">
+    <a class="wordmark" href="/">LinkPulse</a>
+    <nav class="nav-links" aria-label="Primary">
+      <a href="/swagger-ui.html">API docs</a>
+      <a href="https://github.com/PrakarshSrivastav/linkpulse">Source</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="container">
+      <div class="hero-copy">
+        <h1 id="hero-title">Short links, served from memory.</h1>
+        <p class="lead">A Spring Boot shortener with Redis caching, JWT auth and click stats.</p>
+        <div class="actions">
+          <a class="key" href="/swagger-ui.html">Open the API docs</a>
+          <a href="https://github.com/PrakarshSrivastav/linkpulse">Read the source</a>
+        </div>
+      </div>
+
+      <figure class="graphite">
+        <figcaption>Create a link, then follow it</figcaption>
+<pre><code><span class="t">POST</span> /api/links
+Authorization: Bearer &lt;accessToken&gt;
+{"url": "https://example.com/launch", "alias": "launch"}
+
+<span class="c">201 Created</span>
+{"code": "launch", "shortUrl": "http://localhost:8080/launch"}
+
+<span class="t">GET</span> /launch
+<span class="c">302 Found</span>
+Location: https://example.com/launch</code></pre>
+      </figure>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="api-title">
+    <div class="container">
+      <div class="section-head">
+        <h2 id="api-title">Every endpoint on one page</h2>
+        <p>Log in, paste the token into Authorize in the API docs, and try each call there.</p>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th scope="col">Method</th><th scope="col">Path</th><th scope="col">Auth</th><th scope="col">What it does</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>POST</code></td><td><code>/api/auth/register</code></td><td>none</td><td>Create an account (BCrypt-hashed password)</td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/auth/login</code></td><td>none</td><td>Exchange email and password for a one-hour JWT</td></tr>
+            <tr><td><code>GET</code></td><td><code>/api/me</code></td><td>Bearer</td><td>The user the token belongs to</td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/links</code></td><td>Bearer</td><td>Shorten a URL, with an optional alias and expiry</td></tr>
+            <tr><td><code>GET</code></td><td><code>/api/links</code></td><td>Bearer</td><td>Your 100 newest links</td></tr>
+            <tr><td><code>DELETE</code></td><td><code>/api/links/{code}</code></td><td>Bearer</td><td>Delete one of your links</td></tr>
+            <tr><td><code>GET</code></td><td><code>/api/links/{code}/stats</code></td><td>Bearer</td><td>Clicks in total, per day and by referrer</td></tr>
+            <tr class="hot"><td><code>GET</code></td><td><code>/{code}</code></td><td>none</td><td>The redirect: Redis first, Postgres on a miss</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="runs-title">
+    <div class="container">
+      <div class="section-head">
+        <h2 id="runs-title">Measured on the redirect path</h2>
+        <p>k6, 100 virtual users, 30 seconds per run.</p>
+      </div>
+      <div class="runs">
+        <div class="run">
+          <div><h3>Postgres only</h3><p>Every redirect borrows one of ten pooled connections.</p></div>
+          <p class="figure">9,528<small>req/s</small></p>
+          <p class="p99">p99 27.45 ms</p>
+        </div>
+        <div class="run">
+          <div><h3>Redis cache-aside</h3><p>99.92% hits; the pool queue drops to zero.</p></div>
+          <p class="figure">28,470<small>req/s</small></p>
+          <p class="p99">p99 6.47 ms</p>
+        </div>
+        <div class="run">
+          <div><h3>Clicks written inline</h3><p>One INSERT and commit per redirect.</p></div>
+          <p class="figure">5,479<small>req/s</small></p>
+          <p class="p99">p99 34.76 ms</p>
+        </div>
+        <div class="run">
+          <div><h3>Clicks queued and batched</h3><p>Flushed once a second; 618,107 clicks, none lost.</p></div>
+          <p class="figure">16,268<small>req/s</small></p>
+          <p class="p99">p99 15.21 ms</p>
+        </div>
+      </div>
+      <p class="note">One laptop ran the app, Postgres, Redis and k6 together, so treat these as relative, not absolute.</p>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <a class="wordmark" href="/">LinkPulse</a>
+    <nav class="footer-links" aria-label="Footer">
+      <a href="/swagger-ui.html">API docs</a>
+      <a href="/v3/api-docs">OpenAPI JSON</a>
+      <a href="https://github.com/PrakarshSrivastav/linkpulse">Source on GitHub</a>
+    </nav>
+    <p class="credit">Page design follows <a href="https://github.com/nutlope/hallmark">Hallmark</a> (MIT) and its Cobalt theme.</p>
+  </div>
+</footer>
+
+</body>
+</html>

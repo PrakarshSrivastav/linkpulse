@@ -1,11 +1,16 @@
+# Every value that differs between your machine and a server comes from an environment variable.
+# Defaults exist only for things that are harmless when wrong: they point at localhost, so a
+# server that forgets to set them fails to connect instead of running insecurely.
+# JWT_SECRET deliberately has no default: the app refuses to start without it.
+
 linkpulse:
-  base-url: http://localhost:8080
+  base-url: ${BASE_URL:http://localhost:8080}
   cache:
     ttl: 1h
     not-found-ttl: 60s
 
   jwt:
-    secret: ${JWT_SECRET:dev-only-secret-change-me-at-least-32-bytes!!}
+    secret: ${JWT_SECRET}
     ttl: 1h
 
   clicks:
@@ -14,28 +19,47 @@ linkpulse:
     batch-size: 1000
     flush-interval-ms: 1000
 
+  # Token buckets in Redis: capacity = burst, refilled evenly over `per`.
+  # Redirects are deliberately not limited: they are served from cache, and a limit would add a
+  # Redis round trip to the hot path.
+  rate-limit:
+    enabled: ${RATE_LIMIT_ENABLED:true}
+    login: { capacity: 10, per: 1m }         # per client IP; protects BCrypt CPU and passwords
+    register: { capacity: 5, per: 10m }      # per client IP; slows account spam
+    create-link: { capacity: 30, per: 1m }   # per user
+
+server:
+  port: ${PORT:8080}
+  # Set to "native" only behind a proxy that is the sole way in (e.g. Render, Fly); then the
+  # client IP comes from X-Forwarded-For. Left at none locally so the header cannot be spoofed.
+  forward-headers-strategy: ${FORWARD_HEADERS_STRATEGY:none}
+
 logging:
   level:
-    org.hibernate.SQL: debug
+    org.hibernate.SQL: ${SQL_LOG_LEVEL:info}
 
 spring:
   application:
     name: linkpulse
   datasource:
-    url: jdbc:postgresql://localhost:5433/linkpulse?reWriteBatchedInserts=true
-    username: linkpulse
-    password: linkpulse
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5433/linkpulse?reWriteBatchedInserts=true}
+    username: ${DATABASE_USERNAME:linkpulse}
+    password: ${DATABASE_PASSWORD:linkpulse}
   jpa:
     hibernate:
       ddl-auto: validate
     open-in-view: false
   data:
     redis:
-      host: localhost
-      port: 6379
+      url: ${REDIS_URL:redis://:linkpulse-dev@localhost:6379}
       timeout: 200ms
 
+# Actuator lives on its own port, bound to localhost only, so it is never reachable through the
+# public port. Benchmarks and local checks use http://localhost:9091/actuator/...
 management:
+  server:
+    port: ${MANAGEMENT_PORT:9091}
+    address: 127.0.0.1
   endpoint:
     health:
       show-details: always
@@ -43,3 +67,11 @@ management:
     web:
       exposure:
         include: health,metrics
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha

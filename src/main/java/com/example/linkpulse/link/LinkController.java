@@ -17,7 +17,12 @@ import java.net.URI;
 import java.util.List;
 import com.example.linkpulse.click.ClickStats;
 import com.example.linkpulse.click.ClickStatsRepository;
+import com.example.linkpulse.web.OpenApiConfig;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
+@Tag(name = "Links", description = "Create, list, delete and inspect your own short links")
+@SecurityRequirement(name = OpenApiConfig.BEARER)
 @RestController
 @RequestMapping("/api/links")
 public class LinkController {

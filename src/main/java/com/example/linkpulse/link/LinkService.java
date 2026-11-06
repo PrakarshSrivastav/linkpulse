@@ -8,12 +8,14 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 @Service
 public class LinkService {
 
     static final int MAX_ATTEMPTS = 3;
     private static final String CODE_CONSTRAINT = "uk_links_code";
+    private static final Pattern VALID_CODE = Pattern.compile("[A-Za-z0-9_-]{4,32}");
     private static final Logger log = LoggerFactory.getLogger(LinkService.class);
 
     private final LinkRepository repository;
@@ -38,6 +40,11 @@ public class LinkService {
     }
 
     public String resolveLongUrl(String code) {
+        // Same shape as aliases and generated codes. Anything else can't exist, so reject it before
+        // it reaches Redis (no negative-cache key per garbage path) or Postgres.
+        if (!VALID_CODE.matcher(code).matches()) {
+            throw new LinkNotFoundException(code);
+        }
         Optional<String> cached = cache.get(code);
         if (cached.isPresent()) {
             if (LinkCache.NOT_FOUND.equals(cached.get())) {

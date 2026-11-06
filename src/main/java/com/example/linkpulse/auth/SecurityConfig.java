@@ -41,9 +41,20 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
+    // The old default was committed to git, so it is public forever and must never be accepted.
+    private static final String BURNED_SECRET = "dev-only-secret-change-me-at-least-32-bytes!!";
+    private static final int MIN_SECRET_BYTES = 32;
+
     @Bean
     SecretKey jwtSigningKey(@Value("${linkpulse.jwt.secret}") String secret) {
-        return new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+        byte[] bytes = secret.getBytes(StandardCharsets.UTF_8);
+        if (bytes.length < MIN_SECRET_BYTES) {
+            throw new IllegalStateException("JWT_SECRET must be at least " + MIN_SECRET_BYTES + " bytes for HS256");
+        }
+        if (secret.equals(BURNED_SECRET)) {
+            throw new IllegalStateException("JWT_SECRET is the old value from git history; generate a new one");
+        }
+        return new SecretKeySpec(bytes, "HmacSHA256");
     }
 
     @Bean

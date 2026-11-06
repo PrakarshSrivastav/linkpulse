@@ -62,6 +62,14 @@ class AuthApiTest {
     }
 
     @Test
+    void passwordOver72BytesIsRejectedEvenWhenUnder72Characters() throws Exception {
+        // 40 x "é" = 40 characters but 80 UTF-8 bytes: passes @Size, would overflow BCrypt.
+        register("me@example.com", "é".repeat(40))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.passwordWithinBcryptLimit").exists());
+    }
+
+    @Test
     void wrongPasswordAndUnknownEmailGiveTheSame401() throws Exception {
         register("me@example.com", "correct-horse-battery").andExpect(status().isCreated());
 
