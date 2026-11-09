@@ -15,7 +15,8 @@ linkpulse:
 
   clicks:
     mode: async            # async | sync (sync = one INSERT per redirect, for comparison)
-    queue-capacity: 100000
+    # Each queued click holds a few hundred bytes; lower this on small hosts (512 MB free tiers).
+    queue-capacity: ${CLICK_QUEUE_CAPACITY:100000}
     batch-size: 1000
     flush-interval-ms: 1000
 

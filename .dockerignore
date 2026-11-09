@@ -1,0 +1,15 @@
+# Only pom.xml and src/ are needed to build. Keep everything else (and every secret) out of the build context.
+target/
+.git/
+.idea/
+.mvn/
+bench/
+notes/
+*.md
+.env
+.env.*
+*.pem
+*.key
+docker-compose.yml
+mvnw
+mvnw.cmd

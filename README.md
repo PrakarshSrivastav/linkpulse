@@ -40,6 +40,7 @@ They run against the same local Postgres and Redis and delete their data.
 | `MANAGEMENT_PORT` | `9091` | actuator, bound to 127.0.0.1 |
 | `SQL_LOG_LEVEL` | `info` | `debug` logs every SQL statement |
 | `RATE_LIMIT_ENABLED` | `true` | token buckets in Redis: login 10/min and register 5/10 min per IP, link creation 30/min per user; `429` + `Retry-After` |
+| `CLICK_QUEUE_CAPACITY` | `100000` | max clicks waiting for the batch insert; use ~10000 on a 512 MB host |
 | `FORWARD_HEADERS_STRATEGY` | `none` | set `native` only behind a proxy that is the sole way in, so the client IP comes from `X-Forwarded-For` |
 
 ## Credits
