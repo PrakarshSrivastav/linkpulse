@@ -3,6 +3,9 @@
 A URL shortener backend in Spring Boot 4: Postgres for storage, a Redis cache-aside layer on the redirect path,
 JWT authentication with per-user link ownership, and asynchronous click analytics.
 
+- **Live:** https://linkpulse-1ju5.onrender.com ([API docs](https://linkpulse-1ju5.onrender.com/swagger-ui.html)).
+  Free tier: the first request after ~15 minutes idle takes up to a minute while the server wakes up.
+  Runs on Render (Docker, Frankfurt) with Neon Postgres and Render Key Value.
 - Interactive API docs: `/swagger-ui.html` (OpenAPI spec at `/v3/api-docs`)
 - Benchmarks and what they showed: [notes/benchmarks.md](notes/benchmarks.md)
 
